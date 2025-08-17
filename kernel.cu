@@ -97,7 +97,11 @@ void InitializationKernelLauncher(uchar4 *d_out, int width, int height){
     if (err != cudaSuccess) {
         printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
     }
+    printf("State has been initialized\n\n");
 
     cudaDeviceSynchronize();
+    cudaFree(d_rand);
+
+
     return;
 }

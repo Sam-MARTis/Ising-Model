@@ -19,6 +19,8 @@
 #define W 512
 #define H 512
 
+#define ITERATIONS_PER_DRAW 10
+
 
 #define TITLE_STRING "Ising Model"
 GLuint pbo;
@@ -48,9 +50,22 @@ void render(){
 
     // kernelLauncher(d_out, camera.x, camera.y, camera.z, W, H, SCREEN_SCALING, 0, NULL, NULL);
     // testKernelLauncher(d_out, W, H);
+    IsingKernelLauncher(d_out, temperature, W, H, ITERATIONS_PER_DRAW);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
     glutPostRedisplay();
 }
+void initializeState(){
+    uchar4* d_out = 0;
+
+    cudaGraphicsMapResources(1, &cuda_pbo_resource, 0);
+    cudaGraphicsResourceGetMappedPointer((void **)&d_out, NULL, cuda_pbo_resource);
+
+    InitializationKernelLauncher(d_out, W, H);
+
+    cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
+
+}
+
 
 void drawTexture()
 {
@@ -110,6 +125,7 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutDisplayFunc(display);
     initPixelBuffer();
+    initializeState();
     glutMainLoop();
     atexit(exitfunc);
     return 0;
