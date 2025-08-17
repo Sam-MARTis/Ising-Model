@@ -4,8 +4,11 @@
 #include <curand_kernel.h>
 #define TY 32
 #define TX 32
+#define TX2 64
 
 #define INITIALIZATION_THRESHOLD 0.1f
+
+#define DRAWS_PER_REPORT 30
 
 // const static int cols[6] = {255, 0, 0, 100, 0, 255};
 #define URED 255
@@ -37,7 +40,7 @@ void ising_iteration(bool* d_state, float *d_rand, const float beta, const int w
     int upSpin    = d_state[up * width + x] ? 1 : -1;
     int downSpin  = d_state[down * width + x] ? 1 : -1;
 
-
+    
  
     float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
 
@@ -78,9 +81,39 @@ void convert_to_colour(bool* d_state, uchar4* d_cols, int width, int height){
     }
     d_cols[idx].w = 255;
 }
-
+__global__
+void properties(bool* state, int size){
+    __shared__ int sumData[TX2];
+    __shared__ int sumsqData[TX2];
+    // int sum = 0;
+    // int sumsq = 0;
+    // for(int i = 0; i < size; i++){
+    //     const int& val = state[i] ? 1 : -1;
+    //     sum += val;
+    //     sumsq += val * val;
+    // }
+    const int id = threadIdx.x;
+    for(int i = id; i < size; i += blockDim.x){
+        const int val = state[i] ? 1 : -1;
+        sumData[id] += val;
+        sumsqData[id] += val * val;
+    }
+    __syncthreads();
+    if(id == 0){
+        int sum = 0;
+        int sumsq = 0;
+        for(int i = 0; i < blockDim.x; i++){
+            sum += sumData[i];
+            sumsq += sumsqData[i];
+        }
+        float mean = (float)sum / size;
+        float variance = ((float)sumsq / size) - (mean * mean);
+        printf("Mean: %f, Variance: %f\n", mean, variance);
+    }
+}
+int counter = 0;
 void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height, int iterations_per_draw){
-
+    counter+=1;
     const dim3 blockSize(TX, TY);
     const dim3 gridSize((width + TX - 1) / TX, (height + TY - 1) / TY);
     float *d_rand;
@@ -96,6 +129,11 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
         ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 2);
     }
 
+    if(counter%DRAWS_PER_REPORT == 0){
+        const dim3 blockSize2(TX2);
+        const dim3 gridSize2(1);
+        properties<<<gridSize2, blockSize2>>>(d_state, width * height);
+    }
     convert_to_colour<<<gridSize, blockSize>>>(d_state, d_out, width, height);
 
     cudaError_t err = cudaGetLastError();
@@ -104,8 +142,9 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
     }
     cudaFree(d_rand);
     cudaFree(d_state);
-
+    
     cudaDeviceSynchronize();
+    
     return;
 }
 
@@ -129,6 +168,7 @@ __global__ void initialization_kernel(uchar4 *d_out, float *d_rand, int width, i
 }
 
 void InitializationKernelLauncher(uchar4 *d_out, int width, int height){
+    
     const dim3 blockSize(TX, TY);
     const dim3 gridSize((width + TX - 1) / TX, (height + TY - 1) / TY);
 
