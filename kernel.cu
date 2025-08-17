@@ -8,8 +8,8 @@
 curandGenerator_t gen;
 
 __global__
-void ising_iteration(){
-
+void ising_iteration(bool* d_state, float *d_rand, const float beta, const int width, const int height){
+    
 }
 
 __global__
@@ -41,19 +41,28 @@ void convert_to_colour(bool* d_state, uchar4* d_cols, int width, int height){
 
 void IsingKernelLauncher(uchar4 *d_out, float temperature, int width, int height, int iterations_per_draw){
 
-
+    const float beta = 1.0f / temperature;
     const dim3 blockSize(TX, TY);
     const dim3 gridSize((width + TX - 1) / TX, (height + TY - 1) / TY);
-    
+    float *d_rand;
+    bool *d_state;
+    cudaMalloc(&d_state, width * height * sizeof(bool));
+    cudaMalloc(&d_rand, width * height * sizeof(float));
+    convert_to_bool<<<gridSize, blockSize>>>(d_state, d_out, width, height);
 
-    
-    ising_iteration<<<gridSize, blockSize>>>();
-    
+    for (int i = 0; i < iterations_per_draw; i++) {
+        curandGenerateUniform(gen, d_rand, width * height);
+        ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height);
+    }
+
+    convert_to_colour<<<gridSize, blockSize>>>(d_state, d_out, width, height);
+
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
     }
-    
+    cudaFree(d_rand);
+
     cudaDeviceSynchronize();
     return;
 }
