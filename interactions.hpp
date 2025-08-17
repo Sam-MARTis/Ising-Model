@@ -4,8 +4,8 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-float temperature = 300.0f;
-const float dt = 1.0f;
+float beta = 0.3f;
+const float db = 0.02f;
 
 
 void print(const auto& message){
@@ -21,11 +21,15 @@ void printInstructions(){
 const float epsilon = 0.0001f;
 
 void hotter(){
-    temperature += dt;
+    beta += db;
+    print("Beta: " + std::to_string(beta));
+    beta = MIN(1.0f, beta);
 }
 
 void colder(){
-    temperature -= dt;
+    beta -= db;
+    print("Beta: " + std::to_string(beta));
+    beta = MAX(0.0f, beta);
 }
 
 

@@ -1,15 +1,41 @@
 #include "kernel.hpp"
 #include <iostream>
 #include <curand.h>
+#include <curand_kernel.h>
 #define TY 32
 #define TX 32
 
-#define INITIALIZATION_THRESHOLD 0.6f
+#define INITIALIZATION_THRESHOLD 0.9f
 curandGenerator_t gen;
 
 __global__
 void ising_iteration(bool* d_state, float *d_rand, const float beta, const int width, const int height){
-    
+    const int x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int idx = y * width + x;
+
+    if(x >= width || y >= height) return;
+
+    // Calculate the index of the neighboring cells
+    int left = (x == 0) ? (width - 1) : (x - 1);
+    int right = (x == width - 1) ? 0 : (x + 1);
+    int up = (y == 0) ? (height - 1) : (y - 1);
+    int down = (y == height - 1) ? 0 : (y + 1);
+    const bool current_state = d_state[idx];
+    int8_t spin = current_state ? 1 : -1;
+    int8_t leftSpin = d_state[up * width + left] ? 1 : -1;
+    int8_t rightSpin = d_state[up * width + right] ? 1 : -1;
+    int8_t upSpin = d_state[up * width + x] ? 1 : -1;
+    int8_t downSpin = d_state[down * width + x] ? 1 : -1;
+
+ 
+    int deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
+
+
+    if(deltaE < 0 || d_rand[idx] < expf(-beta * deltaE)) {
+        d_state[idx] = !current_state; // Flip the state
+    }
+
 }
 
 __global__
@@ -30,18 +56,18 @@ void convert_to_colour(bool* d_state, uchar4* d_cols, int width, int height){
 
     if(d_state[idx]){
         d_cols[idx].x = 255;
-        d_cols[idx].y = 0;
-        d_cols[idx].z = 0;
+        d_cols[idx].y = 255;
+        d_cols[idx].z = 255;
     } else {
         d_cols[idx].x = 0;
         d_cols[idx].y = 0;
-        d_cols[idx].z = 255;
+        d_cols[idx].z = 0;
     }
+    d_cols[idx].w = 255;
 }
 
-void IsingKernelLauncher(uchar4 *d_out, float temperature, int width, int height, int iterations_per_draw){
+void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height, int iterations_per_draw){
 
-    const float beta = 1.0f / temperature;
     const dim3 blockSize(TX, TY);
     const dim3 gridSize((width + TX - 1) / TX, (height + TY - 1) / TY);
     float *d_rand;
@@ -76,12 +102,12 @@ __global__ void initialization_kernel(uchar4 *d_out, float *d_rand, int width, i
     if (x >= width || y >= height) return;
     if (d_rand[idx] < threshold) {
         d_out[idx].x = 255;
-        d_out[idx].y = 0;
-        d_out[idx].z = 0;
+        d_out[idx].y = 255;
+        d_out[idx].z = 255;
     } else {
         d_out[idx].x = 0;
         d_out[idx].y = 0;
-        d_out[idx].z = 255;
+        d_out[idx].z = 0;
     }
     d_out[idx].w = 255;
 }

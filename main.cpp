@@ -19,7 +19,7 @@
 #define W 512
 #define H 512
 
-#define ITERATIONS_PER_DRAW 10
+#define ITERATIONS_PER_DRAW 1
 
 
 #define TITLE_STRING "Ising Model"
@@ -50,7 +50,7 @@ void render(){
 
     // kernelLauncher(d_out, camera.x, camera.y, camera.z, W, H, SCREEN_SCALING, 0, NULL, NULL);
     // testKernelLauncher(d_out, W, H);
-    IsingKernelLauncher(d_out, temperature, W, H, ITERATIONS_PER_DRAW);
+    IsingKernelLauncher(d_out, beta, W, H, ITERATIONS_PER_DRAW);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
     glutPostRedisplay();
 }

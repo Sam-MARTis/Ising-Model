@@ -3,14 +3,14 @@ UNAME_S := $(shell uname)
 ifeq ($(UNAME_S), Darwin)
 	LDFLAGS = -Xlinker -framework,OpenGL, -XLinker - framework, GLUT
 else
-	LDFLAGS += -lcuda -lcudart
-	LDFLAGS += -lglut -lGL -lGLU -lGLEW
+	LDFLAGS += -lcuda -lcudart -lcurand
+	LDFLAGS += -lglut -lGL -lGLU -lGLEW 
 endif
 
 
 
 NVCC = /usr/local/cuda-12.8/bin/nvcc
-NVCC_FLAGS += -g -G -Xcompiler -Wall
+NVCC_FLAGS += -g -G -Xcompiler -Wall 
 OBJS = main.o kernel.o
 
 all: main
