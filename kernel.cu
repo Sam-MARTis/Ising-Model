@@ -92,7 +92,7 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
     for (int i = 0; i < iterations_per_draw; i++) {
         curandGenerateUniform(gen, d_rand, width * height);
         ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 1);
-        curandGenerateUniform(gen, d_rand, width * height);
+        // curandGenerateUniform(gen, d_rand, width * height);
         ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 2);
     }
 
