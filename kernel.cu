@@ -39,7 +39,7 @@ void ising_iteration(bool* d_state, float *d_rand, const float beta, const int w
 
 
  
-    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin)*0.25;
+    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
 
     const float val = expf(-beta * deltaE);
 

@@ -52,6 +52,7 @@ void render(){
     // testKernelLauncher(d_out, W, H);
     IsingKernelLauncher(d_out, beta, W, H, ITERATIONS_PER_DRAW);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
+    glutSetWindowTitle(("Ising Model, beta: " + std::to_string(beta)).c_str());
     glutPostRedisplay();
 }
 void initializeState(){
