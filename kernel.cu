@@ -5,18 +5,27 @@
 #define TY 32
 #define TX 32
 
-#define INITIALIZATION_THRESHOLD 0.9f
+#define INITIALIZATION_THRESHOLD 0.1f
+
+// const static int cols[6] = {255, 0, 0, 100, 0, 255};
+#define URED 255
+#define UGREEN 255
+#define UBLUE 255
+#define DRED 0
+#define DGREEN 0
+#define DBLUE 0
 curandGenerator_t gen;
 
 __global__
-void ising_iteration(bool* d_state, float *d_rand, const float beta, const int width, const int height){
+void ising_iteration(bool* d_state, float *d_rand, const float beta, const int width, const int height, const int type){
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
     const int idx = y * width + x;
 
     if(x >= width || y >= height) return;
+    const int hammington_distance = x+y;
+    if((hammington_distance+type) % 2) return;
 
-    // Calculate the index of the neighboring cells
     int left = (x == 0) ? (width - 1) : (x - 1);
     int right = (x == width - 1) ? 0 : (x + 1);
     int up = (y == 0) ? (height - 1) : (y - 1);
@@ -30,14 +39,12 @@ void ising_iteration(bool* d_state, float *d_rand, const float beta, const int w
 
 
  
-    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin)*0.01;
+    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin)*0.25;
 
-    
-    if(x==0){
-        // printf("%f\n", d_rand[idx]);
-    }
+    const float val = expf(-beta * deltaE);
+
     __syncthreads();
-    if(deltaE < 0 || d_rand[idx] < expf(-beta * deltaE)) {
+    if(deltaE < 0 || d_rand[idx] < val) {
         d_state[idx] = !current_state;
     }
     __syncthreads();
@@ -50,7 +57,7 @@ void convert_to_bool(bool* d_state, uchar4* d_cols, int width, int height){
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
     const int idx = y * width + x;
     if(x >= width || y >= height) return;
-    d_state[idx] = (d_cols[idx].x > 128) ? true : false;
+    d_state[idx] = (d_cols[idx].x == URED) ? true : false;
 
 }
 __global__
@@ -61,13 +68,13 @@ void convert_to_colour(bool* d_state, uchar4* d_cols, int width, int height){
     if(x >= width || y >= height) return;
 
     if(d_state[idx]){
-        d_cols[idx].x = 255;
-        d_cols[idx].y = 255;
-        d_cols[idx].z = 255;
+        d_cols[idx].x = URED;
+        d_cols[idx].y = UGREEN;
+        d_cols[idx].z = UBLUE;
     } else {
-        d_cols[idx].x = 0;
-        d_cols[idx].y = 0;
-        d_cols[idx].z = 0;
+        d_cols[idx].x = DRED;
+        d_cols[idx].y = DGREEN;
+        d_cols[idx].z = DBLUE;
     }
     d_cols[idx].w = 255;
 }
@@ -84,7 +91,9 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
 
     for (int i = 0; i < iterations_per_draw; i++) {
         curandGenerateUniform(gen, d_rand, width * height);
-        ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height);
+        ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 1);
+        curandGenerateUniform(gen, d_rand, width * height);
+        ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 2);
     }
 
     convert_to_colour<<<gridSize, blockSize>>>(d_state, d_out, width, height);
@@ -108,13 +117,13 @@ __global__ void initialization_kernel(uchar4 *d_out, float *d_rand, int width, i
     const int idx = y * width + x;
     if (x >= width || y >= height) return;
     if (d_rand[idx] < threshold) {
-        d_out[idx].x = 255;
-        d_out[idx].y = 255;
-        d_out[idx].z = 255;
+        d_out[idx].x = URED;
+        d_out[idx].y = UGREEN;
+        d_out[idx].z = UBLUE;
     } else {
-        d_out[idx].x = 0;
-        d_out[idx].y = 0;
-        d_out[idx].z = 0;
+        d_out[idx].x = DRED;
+        d_out[idx].y = DGREEN;
+        d_out[idx].z = DBLUE;
     }
     d_out[idx].w = 255;
 }

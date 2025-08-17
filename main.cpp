@@ -16,10 +16,10 @@
 #include <cuda_gl_interop.h>
 #include "interactions.hpp"
 
-#define W 512
-#define H 512
+#define W 2048
+#define H 1024
 
-#define ITERATIONS_PER_DRAW 100
+#define ITERATIONS_PER_DRAW 4
 
 
 #define TITLE_STRING "Ising Model"
@@ -115,7 +115,6 @@ void exitfunc()
         glDeleteBuffers(1, &pbo);
         glDeleteTextures(1, &tex);
     }
-    CleanupIsingKernel();  // Clean up CUDA resources
 }
 
 int main(int argc, char **argv)
