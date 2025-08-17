@@ -21,15 +21,15 @@ void printInstructions(){
 const float epsilon = 0.0001f;
 
 void hotter(){
-    beta += db;
+    beta *= (1+db);
     print("Beta: " + std::to_string(beta));
-    beta = MIN(1.0f, beta);
+    // beta = MIN(1.0f, beta);
 }
 
 void colder(){
-    beta -= db;
+    beta *= (1-db);
     print("Beta: " + std::to_string(beta));
-    beta = MAX(0.0f, beta);
+    // beta = MAX(0.0f, beta);
 }
 
 

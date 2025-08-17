@@ -22,19 +22,25 @@ void ising_iteration(bool* d_state, float *d_rand, const float beta, const int w
     int up = (y == 0) ? (height - 1) : (y - 1);
     int down = (y == height - 1) ? 0 : (y + 1);
     const bool current_state = d_state[idx];
-    int8_t spin = current_state ? 1 : -1;
-    int8_t leftSpin = d_state[up * width + left] ? 1 : -1;
-    int8_t rightSpin = d_state[up * width + right] ? 1 : -1;
-    int8_t upSpin = d_state[up * width + x] ? 1 : -1;
-    int8_t downSpin = d_state[down * width + x] ? 1 : -1;
+    int spin = current_state ? 1 : -1;
+    int leftSpin  = d_state[y * width + left] ? 1 : -1;
+    int rightSpin = d_state[y * width + right] ? 1 : -1;
+    int upSpin    = d_state[up * width + x] ? 1 : -1;
+    int downSpin  = d_state[down * width + x] ? 1 : -1;
+
 
  
-    int deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
+    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin)*0.01;
 
-
-    if(deltaE < 0 || d_rand[idx] < expf(-beta * deltaE)) {
-        d_state[idx] = !current_state; // Flip the state
+    
+    if(x==0){
+        // printf("%f\n", d_rand[idx]);
     }
+    __syncthreads();
+    if(deltaE < 0 || d_rand[idx] < expf(-beta * deltaE)) {
+        d_state[idx] = !current_state;
+    }
+    __syncthreads();
 
 }
 
@@ -88,6 +94,7 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
         printf("CUDA kernel launch error: %s\n", cudaGetErrorString(err));
     }
     cudaFree(d_rand);
+    cudaFree(d_state);
 
     cudaDeviceSynchronize();
     return;
@@ -136,6 +143,7 @@ void InitializationKernelLauncher(uchar4 *d_out, int width, int height){
 
     cudaDeviceSynchronize();
     cudaFree(d_rand);
+    
 
 
     return;

@@ -19,7 +19,7 @@
 #define W 512
 #define H 512
 
-#define ITERATIONS_PER_DRAW 1
+#define ITERATIONS_PER_DRAW 100
 
 
 #define TITLE_STRING "Ising Model"
@@ -115,6 +115,7 @@ void exitfunc()
         glDeleteBuffers(1, &pbo);
         glDeleteTextures(1, &tex);
     }
+    CleanupIsingKernel();  // Clean up CUDA resources
 }
 
 int main(int argc, char **argv)
