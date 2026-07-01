@@ -4,12 +4,13 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-float beta = 0.3f;
+float beta = 0.2f;
 const float db = 0.02f;
-const float ddb = 0.001f;
+const float ddb = 0.0005f;
 
 
-void print(const auto& message){
+template <typename T>
+void print(const T& message){
     std::cout<<message<<"\n";
 }
 

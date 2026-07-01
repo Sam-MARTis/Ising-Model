@@ -16,13 +16,14 @@
 #include <cuda_gl_interop.h>
 #include "interactions.hpp"
 
-#define W 2048
-#define H 1024
+float W = 4096;
+float H = 2048;
 
 #define ITERATIONS_PER_DRAW 4
 
 
 #define TITLE_STRING "Ising Model"
+bool display_properties = false;
 GLuint pbo;
 GLuint tex;
 struct cudaGraphicsResource *cuda_pbo_resource;
@@ -50,7 +51,7 @@ void render(){
 
     // kernelLauncher(d_out, camera.x, camera.y, camera.z, W, H, SCREEN_SCALING, 0, NULL, NULL);
     // testKernelLauncher(d_out, W, H);
-    IsingKernelLauncher(d_out, beta, W, H, ITERATIONS_PER_DRAW);
+    IsingKernelLauncher(d_out, beta, W, H, ITERATIONS_PER_DRAW, display_properties);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
     glutSetWindowTitle(("Ising Model, beta: " + std::to_string(beta)).c_str());
     glutPostRedisplay();
@@ -120,6 +121,15 @@ void exitfunc()
 
 int main(int argc, char **argv)
 {
+
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "1") {
+            display_properties = true;
+            W = 2048;
+            H = 1024;
+        }
+    }
     printInstructions();
     initGLUT(&argc, argv);
     gluOrtho2D(0, W, H, 0);

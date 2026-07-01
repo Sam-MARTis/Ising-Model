@@ -4,11 +4,11 @@
 #include <curand_kernel.h>
 #define TY 32
 #define TX 32
-#define TX2 64
+#define TX2 256
 
 #define INITIALIZATION_THRESHOLD 0.1f
 
-#define DRAWS_PER_REPORT 30
+#define DRAWS_PER_REPORT  30
 
 // const static int cols[6] = {255, 0, 0, 100, 0, 255};
 #define URED 255
@@ -42,12 +42,11 @@ void ising_iteration(bool* d_state, float *d_rand, const float beta, const int w
 
     
  
-    float deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
-
+    
+    const int deltaE = 2 * spin * (upSpin + downSpin + leftSpin + rightSpin);
     const float val = expf(-beta * deltaE);
-
     __syncthreads();
-    if(deltaE < 0 || d_rand[idx] < val) {
+    if(val > 1.0f || d_rand[idx] < val) {
         d_state[idx] = !current_state;
     }
     __syncthreads();
@@ -112,7 +111,7 @@ void properties(bool* state, int size){
     }
 }
 int counter = 0;
-void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height, int iterations_per_draw){
+void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height, int iterations_per_draw, bool display_properties){
     counter+=1;
     const dim3 blockSize(TX, TY);
     const dim3 gridSize((width + TX - 1) / TX, (height + TY - 1) / TY);
@@ -128,11 +127,12 @@ void IsingKernelLauncher(uchar4 *d_out, const float beta, int width, int height,
         // curandGenerateUniform(gen, d_rand, width * height);
         ising_iteration<<<gridSize, blockSize>>>(d_state, d_rand, beta, width, height, 2);
     }
-
-    if(counter%DRAWS_PER_REPORT == 0){
-        const dim3 blockSize2(TX2);
-        const dim3 gridSize2(1);
-        properties<<<gridSize2, blockSize2>>>(d_state, width * height);
+    if(display_properties){
+        if(counter%DRAWS_PER_REPORT == 0){
+            const dim3 blockSize2(TX2);
+            const dim3 gridSize2(1);
+            properties<<<gridSize2, blockSize2>>>(d_state, width * height);
+        }
     }
     convert_to_colour<<<gridSize, blockSize>>>(d_state, d_out, width, height);
 
