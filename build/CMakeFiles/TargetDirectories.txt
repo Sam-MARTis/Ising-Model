@@ -1,0 +1,3 @@
+/home/odin/Code/Ising-Model/build/CMakeFiles/CUDAOpenGLInterop.dir
+/home/odin/Code/Ising-Model/build/CMakeFiles/edit_cache.dir
+/home/odin/Code/Ising-Model/build/CMakeFiles/rebuild_cache.dir
